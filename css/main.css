@@ -1,0 +1,36 @@
+.button{
+    height: 35px;
+    font-size: 15px;
+    border-radius:5px;
+    text-align: center;
+}
+.start{
+    width: 80px;
+    background-color: #080;
+    border: 2px solid #060;
+    color: #fff;
+    &:hover{
+        background-color: #fff;
+        color: #080;
+    }
+}
+.options{
+    width: 200px;
+    background-color: #08f;
+    border: 2px solid #06c;
+    color: #fff;
+    &:hover{
+        background-color: #fff;
+        color: #08f;
+    }
+}
+.default-none{
+    display: none;
+}
+.new-element{
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border: 2px solid #000;
+    width: 400px;
+}

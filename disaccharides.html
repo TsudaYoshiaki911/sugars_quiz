@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="utf-8">
+        <title>糖類クイズ(構造式から名前を答えよう)</title>
+        <link rel="stylesheet" href="css/main.css">
+    </head>
+    <body>
+        <h1>二糖類編</h1>
+        <li><a href="index.html">目次に戻る</a></li>
+        <button class="button start" onclick="startQuiz()">スタート</button>
+        <br>
+        <img id="img" class="img default-none" src="image/alpha_glucose.jpg" alt="構造式">
+        <br>
+        <div class="default-none">
+            <button id="options-0" class="button options default-none" onclick="answer(this)">0番</button>&emsp;
+            <button id="options-1" class="button options default-none" onclick="answer(this)">1番</button>&emsp;
+            <button id="options-2" class="button options default-none" onclick="answer(this)">2番</button>&emsp;
+            <button id="options-3" class="button options default-none" onclick="answer(this)">3番</button>&emsp;
+            <div id="result"></div>
+        </div>
+        <br>
+        <h2>間違えた問題</h2>
+        <div id="container"></div>
+        <audio id="sound-correct" src="sound/クイズ正解2.mp3"></audio>
+        <audio id="sound-incorrect" src="sound/クイズ不正解1.mp3"></audio>
+        <audio id="sound-perfect" src="sound/ラッパのファンファーレ.mp3"></audio>
+
+        <script src="js/disaccharides.js"></script>
+    </body>
+</html>
