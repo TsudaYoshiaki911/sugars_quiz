@@ -14,7 +14,7 @@ const question_list = [
     {img: 'image/glycine.jpg', name: 'グリシン'},
     {img: 'image/alanine.jpg', name: 'アラニン'},
     {img: 'image/phenylalanine.jpg', name: 'フェニルアラニン'},
-    {img: 'image/tylosine.jpg', name: 'チロシン'},
+    {img: 'image/tyrosine.jpg', name: 'チロシン'},
     {img: 'image/cysteine.jpg', name: 'システイン'},
     {img: 'image/methionine.jpg', name: 'メチオニン'},
     {img: 'image/serine.jpg', name: 'セリン'},
