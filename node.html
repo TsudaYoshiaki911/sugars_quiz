@@ -1,370 +1,110 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
-<head>
-<meta charset="utf-8" />
-<title>ノード接続計算サンプル</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8">
+<title>簡易ノード接続</title>
 <style>
-  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP"; height:100vh; margin:0; overflow:hidden; background:#f2f4f7; }
-  #canvas { position:relative; width:100%; height:100%; }
+  body { background:#eef2ff; font-family:sans-serif; }
   .node {
-    position:absolute; width:180px; padding:8px; border-radius:8px;
-    background:linear-gradient(180deg,#fff,#eef2ff); box-shadow:0 4px 14px rgba(20,20,40,0.08);
-    border:1px solid rgba(30,30,60,0.06);
-    user-select:none;
+    position:absolute; background:#fff; padding:10px; border-radius:8px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.1); text-align:center;
   }
-  .title { font-weight:700; margin-bottom:6px; font-size:13px; }
-  .ports { position:relative; height:36px; display:flex; justify-content:space-between; align-items:center; }
-  .port { width:14px; height:14px; border-radius:50%; background:#2b6ef6; box-shadow:0 1px 2px rgba(0,0,0,0.15); cursor:pointer; }
-  .port.in { background:#ff9f1c; }
-  .port.out { background:#06b6d4; }
-  .body-row { display:flex; gap:6px; align-items:center; }
-  input[type="number"] { width:80px; padding:6px; font-size:13px; }
-  select { padding:6px; }
-  .result { margin-top:8px; font-size:14px; font-weight:700; color:#0b1226; }
-  .warning { color:#b91c1c; font-size:12px; margin-top:6px; }
-  svg { position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
+  .port {
+    width:12px; height:12px; border-radius:50%;
+    display:inline-block; margin:4px; cursor:pointer;
+  }
+  .in { background:#ff9f1c; }
+  .out { background:#06b6d4; }
+  svg { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
 </style>
-</head>
 <body>
-<div id="canvas">
-  <svg id="svg"></svg>
+<svg id="svg"></svg>
 
-  <!-- Node: Number -->
-  <div class="node" id="node-num1" style="left:40px; top:40px;" data-type="number">
-    <div class="title">Number A</div>
-    <div class="body-row">
-      <input type="number" step="any" value="2" id="val-num1">
-      <div style="flex:1"></div>
-      <div class="port out" data-port="out"></div>
-    </div>
-    <div class="result">Out: <span class="out-val">2</span></div>
-  </div>
+<div class="node" id="num1" style="left:40px;top:40px;">
+  <input type="number" id="val1" value="2" step="any"><br>
+  <div class="port out" data-port="out"></div>
+</div>
 
-  <!-- Node: Number -->
-  <div class="node" id="node-num2" style="left:40px; top:180px;" data-type="number">
-    <div class="title">Number B</div>
-    <div class="body-row">
-      <input type="number" step="any" value="3" id="val-num2">
-      <div style="flex:1"></div>
-      <div class="port out" data-port="out"></div>
-    </div>
-    <div class="result">Out: <span class="out-val">3</span></div>
-  </div>
+<div class="node" id="num2" style="left:40px;top:160px;">
+  <input type="number" id="val2" value="3" step="any"><br>
+  <div class="port out" data-port="out"></div>
+</div>
 
-  <!-- Node: Function -->
-  <div class="node" id="node-func1" style="left:320px; top:100px;" data-type="func">
-    <div class="title">Function (binary)</div>
-    <div class="ports">
-      <div class="port in" data-port="in0" title="left input"></div>
-      <div style="flex:1;text-align:center;">
-        <select id="op-func1">
-          <option value="+">+</option>
-          <option value="-">-</option>
-          <option value="*">*</option>
-          <option value="/">/</option>
-          <option value="^">^ (pow)</option>
-        </select>
-      </div>
-      <div class="port in" data-port="in1" title="right input"></div>
-      <div class="port out" data-port="out"></div>
-    </div>
-    <div class="result">Out: <span class="out-val">—</span></div>
-    <div class="warning" style="display:none"></div>
-  </div>
+<div class="node" id="func" style="left:240px;top:100px;">
+  <div class="port in" data-port="a"></div>
+  <select id="op">
+    <option value="+">+</option>
+    <option value="-">−</option>
+    <option value="*">×</option>
+    <option value="/">÷</option>
+  </select>
+  <div class="port in" data-port="b"></div>
+  <br>
+  <div class="port out" data-port="out"></div>
+</div>
 
-  <!-- Output node (display only) -->
-  <div class="node" id="node-out" style="left:560px; top:120px;" data-type="output">
-    <div class="title">Result</div>
-    <div class="body-row">
-      <div class="port in" data-port="in0"></div>
-      <div style="flex:1;padding-left:6px;">Value: <span class="out-val">—</span></div>
-    </div>
-  </div>
-
+<div class="node" id="out" style="left:440px;top:120px;">
+  <div class="port in" data-port="in"></div>
+  <div>結果：<span id="result">?</span></div>
 </div>
 
 <script>
-/* ------- State ------- */
-const svg = document.getElementById('svg');
-const canvas = document.getElementById('canvas');
-let nodes = {}; // id -> element
-let connections = []; // {from:{node,port}, to:{node,port}, pathEl}
+const svg = document.getElementById("svg");
+let tempLine = null, connections = [];
 
-/* init nodes map */
-document.querySelectorAll('.node').forEach(n => nodes[n.id] = n);
-
-/* Utility: get center point of a port element (in page coords relative to svg) */
-function portPos(portEl) {
-  const rect = portEl.getBoundingClientRect();
-  const canvasRect = canvas.getBoundingClientRect();
-  // relative to canvas top-left
-  return { x: rect.left - canvasRect.left + rect.width/2, y: rect.top - canvasRect.top + rect.height/2 };
+function portCenter(el){
+  const r = el.getBoundingClientRect(), c = svg.getBoundingClientRect();
+  return {x:r.left-c.left+r.width/2, y:r.top-c.top+r.height/2};
 }
+function makePath(a,b){ return `M${a.x},${a.y} C${a.x+40},${a.y} ${b.x-40},${b.y} ${b.x},${b.y}`; }
 
-/* Draw a smooth bezier path between two points */
-function makePath(x1,y1,x2,y2) {
-  const dx = Math.abs(x2-x1);
-  const hx = Math.max(30, dx/2);
-  const path = `M ${x1} ${y1} C ${x1+hx} ${y1} ${x2-hx} ${y2} ${x2} ${y2}`;
-  return path;
-}
-
-/* Create an SVG path and return it */
-function createConnectionPath(x1,y1,x2,y2) {
-  const p = document.createElementNS("http://www.w3.org/2000/svg","path");
-  p.setAttribute('d', makePath(x1,y1,x2,y2));
-  p.setAttribute('stroke','#1f6feb');
-  p.setAttribute('stroke-width','3');
-  p.setAttribute('fill','none');
-  p.setAttribute('stroke-linecap','round');
-  p.style.pointerEvents = 'visibleStroke';
-  svg.appendChild(p);
-  return p;
-}
-
-/* Reposition all connection paths (call after node move or layout change) */
-function refreshAllPaths() {
-  connections.forEach(conn => {
-    const fromEl = nodes[conn.from.node].querySelector(`[data-port="${conn.from.port}"]`);
-    const toEl = nodes[conn.to.node].querySelector(`[data-port="${conn.to.port}"]`);
-    const a = portPos(fromEl), b = portPos(toEl);
-    conn.pathEl.setAttribute('d', makePath(a.x,a.y,b.x,b.y));
-  });
-}
-
-/* ---- Drag node ---- */
-let dragging = null;
-let dragOffset = {x:0,y:0};
-canvas.addEventListener('pointerdown', e => {
-  const node = e.target.closest('.node');
-  if (!node) return;
-  // only start dragging when click not on a port / input/select
-  if (e.target.classList.contains('port') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-  dragging = node;
-  const rect = node.getBoundingClientRect();
-  const canvasRect = canvas.getBoundingClientRect();
-  dragOffset.x = e.clientX - rect.left;
-  dragOffset.y = e.clientY - rect.top;
-  node.setPointerCapture(e.pointerId);
-});
-canvas.addEventListener('pointermove', e => {
-  if (!dragging) return;
-  const canvasRect = canvas.getBoundingClientRect();
-  let nx = e.clientX - canvasRect.left - dragOffset.x;
-  let ny = e.clientY - canvasRect.top - dragOffset.y;
-  // simple bounds
-  nx = Math.max(0, Math.min(canvas.clientWidth - dragging.offsetWidth, nx));
-  ny = Math.max(0, Math.min(canvas.clientHeight - dragging.offsetHeight, ny));
-  dragging.style.left = nx + 'px';
-  dragging.style.top = ny + 'px';
-  refreshAllPaths();
-});
-canvas.addEventListener('pointerup', e => {
-  if (!dragging) return;
-  dragging.releasePointerCapture(e.pointerId);
-  dragging = null;
-});
-
-/* ---- Connect ports by dragging ---- */
-let connecting = null; // {fromNode, fromPort, tempPath}
-canvas.addEventListener('pointerdown', e => {
-  if (!e.target.classList.contains('port')) return;
-  const port = e.target;
-  const node = port.closest('.node');
-  const type = node.dataset.type;
-  const portRole = port.dataset.port; // e.g. out or in0
-  // allow starting drag only from output ports (we choose policy: drag from out to in)
-  if (!port.classList.contains('out')) return;
-  connecting = {
-    fromNode: node.id,
-    fromPort: portRole,
-    startPos: portPos(port),
-    tempPath: createConnectionPath(0,0,0,0),
+document.querySelectorAll(".port.out").forEach(out=>{
+  out.onpointerdown = e=>{
+    tempLine = document.createElementNS("http://www.w3.org/2000/svg","path");
+    tempLine.setAttribute("stroke","#1f6feb"); tempLine.setAttribute("fill","none");
+    tempLine.setAttribute("stroke-width","3"); svg.appendChild(tempLine);
+    const start = portCenter(out);
+    const move = ev=>{
+      const end = {x:ev.clientX, y:ev.clientY};
+      tempLine.setAttribute("d", makePath(start,end));
+    };
+    const up = ev=>{
+      document.removeEventListener("pointermove",move);
+      document.removeEventListener("pointerup",up);
+      const el = document.elementFromPoint(ev.clientX,ev.clientY);
+      if(el && el.classList.contains("in")){
+        connections.push({from:out.closest(".node").id,to:el.closest(".node").id,
+                          fromPort:out.dataset.port,toPort:el.dataset.port,line:tempLine});
+        update();
+      }else svg.removeChild(tempLine);
+      tempLine=null;
+    };
+    document.addEventListener("pointermove",move);
+    document.addEventListener("pointerup",up);
   };
-  // style for temp path
-  connecting.tempPath.setAttribute('stroke','rgba(31,111,235,0.6)');
-  connecting.tempPath.setAttribute('stroke-dasharray','6 6');
 });
 
-canvas.addEventListener('pointermove', e => {
-  if (!connecting) return;
-  const canvasRect = canvas.getBoundingClientRect();
-  const x1 = connecting.startPos.x, y1 = connecting.startPos.y;
-  const x2 = e.clientX - canvasRect.left, y2 = e.clientY - canvasRect.top;
-  connecting.tempPath.setAttribute('d', makePath(x1,y1,x2,y2));
-});
+function update(){
+  // 1. 計算
+  let vals = {
+    num1: +document.getElementById("val1").value,
+    num2: +document.getElementById("val2").value
+  };
+  let op = document.getElementById("op").value;
+  let a = vals.num1, b = vals.num2, f;
+  switch(op){case"+":f=a+b;break;case"-":f=a-b;break;case"*":f=a*b;break;case"/":f=b? a/b:"∞";}
+  document.getElementById("result").textContent = f;
 
-canvas.addEventListener('pointerup', e => {
-  if (!connecting) return;
-  // check if release target is an input port
-  const el = document.elementFromPoint(e.clientX, e.clientY);
-  const targetPort = el && el.classList.contains('port') && el.classList.contains('in') ? el : null;
-  if (targetPort) {
-    const toNode = targetPort.closest('.node').id;
-    const toPort = targetPort.dataset.port;
-    // create real connection object
-    const a = portPos(nodes[connecting.fromNode].querySelector(`[data-port="${connecting.fromPort}"]`));
-    const b = portPos(nodes[toNode].querySelector(`[data-port="${toPort}"]`));
-    const pathEl = createConnectionPath(a.x,a.y,b.x,b.y);
-    connections.push({
-      from: { node: connecting.fromNode, port: connecting.fromPort },
-      to: { node: toNode, port: toPort },
-      pathEl
-    });
-    // remove previous temp and refresh
-    svg.removeChild(connecting.tempPath);
-    connecting = null;
-    runEvaluation();
-    return;
-  }
-  // not connected: remove temp
-  svg.removeChild(connecting.tempPath);
-  connecting = null;
-});
-
-/* Allow clicking on a connection to delete it (simple) */
-svg.addEventListener('click', e => {
-  if (e.target.tagName !== 'path') return;
-  const idx = connections.findIndex(c => c.pathEl === e.target);
-  if (idx !== -1) {
-    svg.removeChild(connections[idx].pathEl);
-    connections.splice(idx,1);
-    runEvaluation();
-  }
-});
-
-/* ---- Evaluation: compute outputs for nodes ----
-   Node types:
-   - number: has an out value from input element
-   - func: has in0/in1 ports, op select, produces out
-   - output: has in0, displays value
-*/
-function buildAdjacency() {
-  // create maps: incoming edges per node.port, outgoing edges per node.port
-  const incoming = {}; // nodeId -> {port: {fromNode,fromPort}}
-  const outgoing = {};
-  connections.forEach(c => {
-    incoming[c.to.node] = incoming[c.to.node] || {};
-    incoming[c.to.node][c.to.port] = { node: c.from.node, port: c.from.port };
-    outgoing[c.from.node] = outgoing[c.from.node] || {};
-    outgoing[c.from.node][c.from.port] = outgoing[c.from.node][c.from.port] || [];
-    outgoing[c.from.node][c.from.port].push({ node: c.to.node, port: c.to.port });
+  // 2. 線を再描画
+  connections.forEach(c=>{
+    const p1 = portCenter(nodes(c.from,c.fromPort)), p2 = portCenter(nodes(c.to,c.toPort));
+    c.line.setAttribute("d", makePath(p1,p2));
   });
-  return { incoming, outgoing };
 }
 
-/* Evaluate with DFS / memoization, detect cycle */
-function runEvaluation() {
-  const { incoming } = buildAdjacency();
-  const memo = {}; // nodeId -> computed out value or error marker
-  const visiting = new Set();
-  let hadCycle = false;
+function nodes(id,port){ return document.querySelector(`#${id} [data-port="${port}"]`); }
 
-  function evalNode(nodeId) {
-    if (memo.hasOwnProperty(nodeId)) return memo[nodeId];
-    if (visiting.has(nodeId)) { hadCycle = true; memo[nodeId] = { error: 'cycle' }; return memo[nodeId]; }
-    visiting.add(nodeId);
-
-    const nodeEl = nodes[nodeId];
-    const type = nodeEl.dataset.type;
-    let result = { value: null };
-
-    if (type === 'number') {
-      const input = nodeEl.querySelector('input[type="number"]');
-      const v = parseFloat(input.value);
-      result.value = Number.isFinite(v) ? v : NaN;
-    } else if (type === 'func') {
-      // get left and right inputs from incoming edges mapped to in0 and in1
-      const inmap = incoming[nodeId] || {};
-      const leftConn = inmap['in0'] || null;
-      const rightConn = inmap['in1'] || null;
-      const op = nodeEl.querySelector('select').value;
-
-      if (!leftConn || !rightConn) {
-        result.error = 'missing input';
-      } else {
-        const leftRes = evalNode(leftConn.node);
-        const rightRes = evalNode(rightConn.node);
-        if (leftRes && leftRes.error) result.error = leftRes.error;
-        else if (rightRes && rightRes.error) result.error = rightRes.error;
-        else {
-          const a = leftRes.value, b = rightRes.value;
-          if (!Number.isFinite(a) || !Number.isFinite(b)) { result.value = NaN; }
-          else {
-            try {
-              switch(op) {
-                case '+': result.value = a + b; break;
-                case '-': result.value = a - b; break;
-                case '*': result.value = a * b; break;
-                case '/': result.value = b === 0 ? Infinity : a / b; break;
-                case '^': result.value = Math.pow(a,b); break;
-                default: result.error = 'unknown op';
-              }
-            } catch(e) { result.error = 'eval error'; }
-          }
-        }
-      }
-    } else if (type === 'output') {
-      const inmap = incoming[nodeId] || {};
-      const leftConn = inmap['in0'] || null;
-      if (!leftConn) result.error = 'missing input';
-      else {
-        const r = evalNode(leftConn.node);
-        if (r && r.error) result.error = r.error;
-        else result.value = r.value;
-      }
-    }
-
-    visiting.delete(nodeId);
-    memo[nodeId] = result;
-    return result;
-  }
-
-  // evaluate every node that could be an output (nodes with no outgoing or explicit output node)
-  // we'll evaluate all nodes to update displays
-  Object.keys(nodes).forEach(nodeId => {
-    evalNode(nodeId);
-  });
-
-  // display results
-  Object.entries(nodes).forEach(([id, el]) => {
-    const outSpan = el.querySelector('.out-val');
-    const warn = el.querySelector('.warning');
-    const res = memo[id];
-    if (!res) {
-      if (outSpan) outSpan.textContent = '—';
-      if (warn) warn.style.display = 'none';
-      return;
-    }
-    if (res.error) {
-      if (outSpan) outSpan.textContent = 'Err';
-      if (warn) { warn.style.display = 'block'; warn.textContent = res.error; }
-    } else {
-      if (outSpan) outSpan.textContent = String(res.value);
-      if (warn) { warn.style.display = 'none'; warn.textContent = ''; }
-    }
-  });
-
-  if (hadCycle) {
-    console.warn('Cycle detected in graph — evaluation stopped for nodes in cycle.');
-  }
-}
-
-/* update when inputs change or op changes */
-document.querySelectorAll('input[type="number"]').forEach(inp => {
-  inp.addEventListener('input', e => {
-    // update visible out on number node
-    const node = inp.closest('.node');
-    node.querySelector('.out-val').textContent = inp.value;
-    runEvaluation();
-  });
-});
-document.querySelectorAll('select').forEach(sel => sel.addEventListener('change', runEvaluation));
-
-/* initial run */
-refreshAllPaths();
-runEvaluation();
+document.querySelectorAll("input,select").forEach(el=>el.addEventListener("input",update));
+update();
 </script>
 </body>
 </html>
